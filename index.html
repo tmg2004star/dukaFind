@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tafuta Bidhaa — Apple Titanium Edition</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
+<style>
+:root{
+  --sf-font:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --bg:#f2f2f7;
+  --card-bg:rgba(255, 255, 255, 0.78);
+  --card-solid:#ffffff;
+  --titanium:#1c1c1e;
+  --titanium-sub:#8e8e93;
+  --accent:#007aff;
+  --accent-green:#34c759;
+  --accent-orange:#ff9500;
+  --glass-border:rgba(255, 255, 255, 0.4);
+  --glass-shadow:0 12px 32px 0 rgba(0, 0, 0, 0.08);
+  --ios-radius:22px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--titanium)}
+body{font-family:var(--sf-font);line-height:1.47059;font-weight:400;letter-spacing:-0.022em;-webkit-font-smoothing:antialiased}
+
+/* Fullscreen Layout without Phone Frame casing */
+.wrap{
+  max-width:960px;
+  margin:0 auto;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:#f2f2f7;
+  position:relative;
+  box-shadow:0 0 40px rgba(0,0,0,0.05);
+}
+
+.hidden{display:none !important}
+
+/* Dynamic Island Header */
+.dynamic-island-wrapper{
+  position:sticky;
+  top:0;
+  z-index:100;
+  display:flex;
+  justify-content:center;
+  padding-top:12px;
+  background:transparent;
+  pointer-events:none;
+}
+.dynamic-island{
+  pointer-events:auto;
+  background:#000;
+  color:#fff;
+  border-radius:28px;
+  padding:10px 18px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:180px;
+  max-width:90%;
+  box-shadow:0 10px 25px rgba(0,0,0,0.3);
+  transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.dynamic-island .di-icon{font-size:18px}
+.dynamic-island .di-title{font-size:13px;font-weight:600;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* iOS Navigation Bar */
+.ios-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 20px;
+  background:rgba(242, 242, 247, 0.8);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  position:sticky;
+  top:50px;
+  z-index:40;
+}
+.ios-nav h1{font-size:20px;font-weight:700;letter-spacing:-0.03em}
+.ios-back{
+  background:none;
+  border:none;
+  color:var(--accent);
+  font-size:16px;
+  font-weight:500;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+/* Screens */
+.screen{flex:1;padding:16px 20px 30px;overflow-y:auto}
+
+/* Home Screen */
+.home{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.home-hero{margin:30px 0 20px}
+.apple-logo-glow{
+  width:96px;
+  height:96px;
+  border-radius:28px;
+  background:linear-gradient(145deg, #ffffff, #e6e6ea);
+  box-shadow:20px 20px 60px #d9d9de, -20px -20px 60px #ffffff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:46px;
+  margin:0 auto 18px;
+}
+.home h2{font-size:30px;font-weight:800;letter-spacing:-0.04em;margin-bottom:8px}
+.home p{font-size:15px;color:var(--titanium-sub);max-width:320px;margin:0 auto 30px;line-height:1.4}
+
+.ios-card-btn{
+  background:var(--card-bg);
+  backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px);
+  border:1px solid var(--glass-border);
+  border-radius:var(--ios-radius);
+  padding:20px;
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  text-align:left;
+  width:100%;
+  box-shadow:var(--glass-shadow);
+  transition:transform 0.2s cubic-bezier(0.2, 0, 0, 1), background 0.2s;
+}
+.ios-card-btn:active{transform:scale(0.97);background:rgba(255,255,255,0.95)}
+.ios-card-btn .ic{
+  width:52px;
+  height:52px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  flex:none;
+}
+.ios-card-btn.biz .ic{background:rgba(52, 199, 89, 0.15);color:var(--accent-green)}
+.ios-card-btn.cust .ic{background:rgba(0, 122, 255, 0.15);color:var(--accent)}
+.ios-card-btn .t{font-size:17px;font-weight:700;margin-bottom:2px}
+.ios-card-btn .s{font-size:13px;color:var(--titanium-sub)}
+
+/* Forms & Cards */
+.ios-card{
+  background:var(--card-solid);
+  border-radius:var(--ios-radius);
+  padding:20px;
+  margin-bottom:18px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.04);
+}
+.ios-card h3{font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:6px}
+.ios-card .hint{font-size:13px;color:var(--titanium-sub);margin-bottom:16px}
+
+.ios-field{margin-bottom:14px}
+.ios-field label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;color:var(--titanium-sub);margin-bottom:6px;letter-spacing:0.04em}
+.ios-field input{
+  width:100%;
+  padding:14px 16px;
+  border-radius:14px;
+  border:1px solid #e5e5ea;
+  background:#f2f2f7;
+  font-size:16px;
+  color:var(--titanium);
+  font-family:var(--sf-font);
+  transition:all 0.2s;
+}
+.ios-field input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px rgba(0,122,255,0.1)}
+
+.row{display:flex;gap:10px}
+.row .ios-field{flex:1}
+
+.ios-btn{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  border-radius:14px;
+  padding:14px 20px;
+  font-size:16px;
+  font-weight:600;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:all 0.2s;
+  font-family:var(--sf-font);
+}
+.ios-btn:active{transform:scale(0.98);opacity:0.9}
+.ios-btn.green{background:var(--accent-green)}
+.ios-btn.ghost{background:#e5e5ea;color:var(--titanium)}
+.ios-btn.danger{background:rgba(255, 59, 48, 0.15);color:#ff3b30}
+
+/* Map frame */
+#pickMap{height:220px;border-radius:18px;margin-top:12px;border:1px solid #e5e5ea;overflow:hidden}
+
+/* Customer Search Input */
+.ios-searchbar{
+  position:sticky;
+  top:0;
+  background:rgba(242,242,247,0.85);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  padding:10px 0 16px;
+  z-index:20;
+  display:flex;
+  gap:10px;
+}
+.ios-searchbar input{
+  flex:1;
+  padding:14px 18px;
+  border-radius:16px;
+  border:none;
+  background:#e3e3e8;
+  font-size:16px;
+  font-family:var(--sf-font);
+}
+.ios-searchbar input:focus{outline:none;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+
+/* Results Items */
+.res-card{
+  background:var(--card-solid);
+  border-radius:18px;
+  padding:16px;
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.03);
+  transition:transform 0.2s;
+}
+.res-card:active{transform:scale(0.98)}
+.res-card .ic-box{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  background:rgba(0,122,255,0.1);
+  color:var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  flex:none;
+}
+.res-card .mid{flex:1;min-width:0}
+.res-card .title{font-size:16px;font-weight:700}
+.res-card .subtitle{font-size:13px;color:var(--titanium-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-card .price{font-size:16px;font-weight:800;color:var(--accent-green);text-align:right}
+.res-card .dist{font-size:12px;color:var(--accent);font-weight:600;text-align:right;margin-top:2px}
+
+/* iOS Bottom Sheet Modal (Permission) */
+.ios-modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  z-index:200;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+.ios-modal{
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(30px);
+  -webkit-backdrop-filter:blur(30px);
+  border-radius:32px 32px 0 0;
+  padding:28px 24px 40px;
+  width:100%;
+  max-width:540px;
+  text-align:center;
+  box-shadow:0 -10px 40px rgba(0,0,0,0.2);
+  animation:slideUp 0.35s cubic-bezier(0.15, 0.85, 0.35, 1.2);
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.ios-modal .icon-badge{
+  width:64px;
+  height:64px;
+  border-radius:20px;
+  background:linear-gradient(135deg, #007aff, #0056b3);
+  color:#fff;
+  font-size:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 16px;
+  box-shadow:0 8px 20px rgba(0,122,255,0.3);
+}
+.ios-modal h3{font-size:22px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.ios-modal p{font-size:14px;color:var(--titanium-sub);margin-bottom:24px;line-height:1.4}
+.ios-modal .btns{display:flex;flex-direction:column;gap:10px}
+
+/* Map View Panel - Pop-up Overlay Design */
+.map-overlay{
+  position:fixed;
+  inset:0;
+  z-index:150;
+  background:rgba(0, 0, 0, 0.5);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+.map-popup-card{
+  background:#ffffff;
+  width:100%;
+  max-width:860px;
+  height:85vh;
+  border-radius:28px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  position:relative;
+  animation:popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes popIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+
+.map-nav{
+  position:relative;
+  background:rgba(255, 255, 255, 0.9);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid #e5e5ea;
+  z-index:10;
+}
+#custMap{flex:1;width:100%}
+.map-bottom-bar{
+  padding:16px 20px;
+  background:rgba(255,255,255,0.95);
+  border-top:1px solid var(--glass-border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.map-stat b{display:block;font-size:20px;font-weight:800}
+.map-stat span{font-size:11px;color:var(--titanium-sub);text-transform:uppercase;font-weight:600}
+
+/* Toast Notification */
+.ios-toast{
+  position:fixed;
+  top:60px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(28,28,30,0.9);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  color:#fff;
+  padding:12px 22px;
+  border-radius:30px;
+  font-size:14px;
+  font-weight:500;
+  z-index:300;
+  opacity:0;
+  transition:all 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+.ios-toast.show{opacity:1;top:70px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Dynamic Island Header -->
+  <div class="dynamic-island-wrapper">
+    <div class="dynamic-island" id="dynamicIsland">
+      <span class="di-icon"></span>
+      <span class="di-title" id="diText">Tafuta Bidhaa</span>
+    </div>
+  </div>
+
+  <!-- iOS Top Navigation -->
+  <div class="ios-nav hidden" id="iosNav">
+    <button class="ios-back" id="backBtn">‹ Nyumbani</button>
+    <h1 id="navTitle">Tafuta Bidhaa</h1>
+    <div style="width:50px"></div>
+  </div>
+
+  <!-- ============ HOME SCREEN ============ -->
+  <div class="screen home" id="screenHome">
+    <div class="home-hero">
+      <div class="apple-logo-glow">🛍️</div>
+      <h2>Tafuta Bidhaa</h2>
+      <p>Pata bidhaa yoyote dukani haraka na kwa usahihi kwa kutumia ramani ya kiashirio.</p>
+    </div>
+
+    <div style="width:100%">
+      <button class="ios-card-btn biz" id="goBiz">
+        <div class="ic">🏪</div>
+        <div>
+          <div class="t">Mfanyabiashara</div>
+          <div class="s">Sajili mkoa, wilaya, mtaa na bidhaa zako</div>
+        </div>
+      </button>
+
+      <button class="ios-card-btn cust" id="goCust">
+        <div class="ic">🔍</div>
+        <div>
+          <div class="t">Mteja</div>
+          <div class="s">Tafuta bidhaa na upate maelekezo ya kufika</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ BUSINESS SCREEN ============ -->
+  <div class="screen hidden" id="screenBiz">
+    <div class="ios-card" id="shopRegCard">
+      <h3>Sajili Duka Lako</h3>
+      <div class="hint">Jaza taarifa sahihi za mahali duka lilipo kisha uhakiki kwenye ramani.</div>
+
+      <div class="ios-field">
+        <label>Jina la Duka</label>
+        <input id="shopName" placeholder="mf. Mama Ally Store">
+      </div>
+
+      <div class="ios-field">
+        <label>Namba ya Simu</label>
+        <input id="shopPhone" placeholder="mf. 0765 000 000">
+      </div>
+
+      <div class="row">
+        <div class="ios-field">
+          <label>Mkoa</label>
+          <input id="shopRegion" placeholder="Dar es Salaam">
+        </div>
+        <div class="ios-field">
+          <label>Wilaya</label>
+          <input id="shopDistrict" placeholder="Ilala">
+        </div>
+      </div>
+
+      <div class="ios-field">
+        <label>Mtaa / Kata</label>
+        <input id="shopStreet" placeholder="Kariakoo">
+      </div>
+
+      <button class="ios-btn ghost" id="searchLocationBtn" style="margin-bottom:10px">🔍 Hakiki Eneo Kwenye Ramani</button>
+
+      <div id="pickMap"></div>
+      <div class="hint" id="shopPicked" style="margin-top:8px;color:var(--accent-green);font-weight:600"></div>
+
+      <button class="ios-btn green" id="saveShop" style="margin-top:14px">Hifadhi Duka Langu</button>
+    </div>
+
+    <!-- Products Section -->
+    <div class="ios-card hidden" id="prodCard">
+      <h3 id="prodShopName">Bidhaa za Dukani</h3>
+      <div class="hint" id="prodShopAddr"></div>
+
+      <div class="row">
+        <div class="ios-field">
+          <label>Jina la Bidhaa</label>
+          <input id="prodName" placeholder="mf. Sukari 1kg">
+        </div>
+        <div class="ios-field" style="max-width:120px">
+          <label>Bei (TSh)</label>
+          <input id="prodPrice" type="number" placeholder="3000">
+        </div>
+      </div>
+
+      <button class="ios-btn" id="addProd">+ Ongeza Bidhaa</button>
+      <div id="prodList" style="margin-top:16px"></div>
+      <button class="ios-btn ghost" id="newShopBtn" style="margin-top:14px">➕ Sajili Duka Lingine</button>
+    </div>
+
+    <div class="ios-card" id="myShopsCard">
+      <h3>Maduka Yaliyosajiliwa</h3>
+      <div id="myShops"></div>
+    </div>
+  </div>
+
+  <!-- ============ CUSTOMER SCREEN ============ -->
+  <div class="screen hidden" id="screenCust">
+    <div class="ios-searchbar">
+      <input id="searchInput" placeholder="🔍 Tafuta bidhaa... mf. Sukari, Mchele">
+      <button class="ios-btn" id="searchBtn" style="width:auto;padding:0 20px">Tafuta</button>
+    </div>
+    <div id="custResults"></div>
+  </div>
+
+  <!-- ============ LOCATION PERMISSION BOTTOM SHEET (MODAL) ============ -->
+  <div class="ios-modal-overlay hidden" id="locModal">
+    <div class="ios-modal">
+      <div class="icon-badge">📍</div>
+      <h3>Ruhusu Location (GPS)</h3>
+      <p>Ili kukuonyesha duka lililopo karibu zaidi na wewe na kupata njia rahisi ya kufika, tunaomba kuunganishwa na GPS ya kifaa yako.</p>
+      <div class="btns">
+        <button class="ios-btn" id="allowLocBtn">Unganisha & Ruhusu</button>
+        <button class="ios-btn ghost" id="denyLocBtn">Sio Sasa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAP POP-UP PANEL ============ -->
+  <div class="map-overlay hidden" id="mapPanel">
+    <div class="map-popup-card">
+      <div class="map-nav">
+        <button class="ios-back" id="backMapBtn" style="font-size:15px">‹ Rudi</button>
+        <div style="text-align:center;flex:1;margin:0 10px;min-width:0">
+          <div style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="mapProd">Bidhaa</div>
+          <div style="font-size:12px;color:var(--titanium-sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="mapShop">Duka</div>
+        </div>
+        <button class="ios-btn danger" id="closeMap" style="width:auto;padding:8px 16px;font-size:13px;border-radius:10px">Cancel ✕</button>
+      </div>
+
+      <div id="custMap"></div>
+
+      <div class="map-bottom-bar">
+        <div class="map-stat">
+          <b id="distVal">—</b>
+          <span>Umbali</span>
+        </div>
+        <div class="map-stat">
+          <b id="timeVal">—</b>
+          <span>Muda (Miguu)</span>
+        </div>
+        <button class="ios-btn green" id="liveBtn" style="width:auto;padding:12px 20px">📍 Anza Kuniongoza</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ios-toast" id="toast"></div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<script>
+/* DATA & HELPERS */
+const DB_KEY='tb_shops_ios_v1';
+function loadShops(){try{return JSON.parse(localStorage.getItem(DB_KEY))||[];}catch(e){return [];}}
+function saveShops(a){localStorage.setItem(DB_KEY,JSON.stringify(a));}
+let SHOPS=loadShops();
+if(!SHOPS.length) seedDemo();
+
+function seedDemo(){
+  SHOPS=[
+    {id:'s1',name:'Supermarket Kariakoo',phone:'0765111222',lat:-6.8181,lon:39.2690,address:'Mtaa wa Kariakoo, Ilala, Dar es Salaam',
+     products:[{name:'Sukari 1kg',price:3200},{name:'Mchele 1kg',price:3000},{name:'Mafuta 1L',price:6500}]},
+    {id:'s2',name:'Duka la Mama Ally',phone:'0712333444',lat:-6.7725,lon:39.2486,address:'Mtaa wa Magomeni, Kinondoni, Dar es Salaam',
+     products:[{name:'Mkate',price:2500},{name:'Maziwa 1L',price:3500},{name:'Sukari 1kg',price:3300}]}
+  ];
+  saveShops(SHOPS);
+}
+
+const $=s=>document.querySelector(s);
+function toast(msg){
+  const t=$('#toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2800);
+}
+function setDynamicIsland(text, icon=''){
+  $('#diText').textContent=text;
+  $('.di-icon').textContent=icon;
+}
+function money(n){return 'TSh '+Number(n).toLocaleString('en-US');}
+function haversine(a,b,c,d){const R=6371,r=x=>x*Math.PI/180;const dLa=r(c-a),dLo=r(d-b);const q=Math.sin(dLa/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLo/2)**2;return R*2*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
+function fmtDist(km){return km<1?Math.round(km*1000)+' m':km.toFixed(1)+' km';}
+function fmtTime(km){const min=Math.round(km/5*60);return min<60?min+' dak':Math.floor(min/60)+' saa '+(min%60)+' dak';}
+
+/* NAVIGATION */
+function show(screen, title){
+  ['#screenHome','#screenBiz','#screenCust'].forEach(s=>$(s).classList.add('hidden'));
+  $('#screen'+screen.charAt(0).toUpperCase()+screen.slice(1)).classList.remove('hidden');
+  if(screen==='home'){
+    $('#iosNav').classList.add('hidden');
+    setDynamicIsland('Tafuta Bidhaa');
+  } else {
+    $('#iosNav').classList.remove('hidden');
+    $('#navTitle').textContent=title;
+    setDynamicIsland(title, '📍');
+  }
+}
+$('#goBiz').onclick=()=>{show('biz','Mfanyabiashara');setTimeout(initPickMap,60);renderMyShops();};
+$('#goCust').onclick=()=>{show('cust','Mteja — Tafuta');};
+$('#backBtn').onclick=()=>show('home');
+
+/* MAP PICKER & SEARCH */
+let pickMap=null, pickMarker=null, pickedLoc=null;
+function initPickMap(){
+  if(pickMap){pickMap.invalidateSize();return;}
+  pickMap=L.map('pickMap').setView([-6.369,34.888],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(pickMap);
+  pickMap.on('click',e=>setPicked(e.latlng.lat,e.latlng.lng));
+}
+function setPicked(lat,lon,label){
+  pickedLoc={lat,lon,address:label||''};
+  if(!pickMarker){
+    pickMarker=L.marker([lat,lon],{draggable:true}).addTo(pickMap);
+    pickMarker.on('dragend',()=>{const p=pickMarker.getLatLng();setPicked(p.lat,p.lng);});
+  } else pickMarker.setLatLng([lat,lon]);
+  pickMap.setView([lat,lon],15);
+  $('#shopPicked').textContent='📍 Eneo Limehakikiwa!';
+}
+
+$('#searchLocationBtn').onclick=()=>{
+  const reg=$('#shopRegion').value.trim(), dist=$('#shopDistrict').value.trim(), str=$('#shopStreet').value.trim();
+  if(!reg||!dist||!str){toast('Tafadhali jaza Mkoa, Wilaya na Mtaa!');return;}
+  toast('Inatafuta kwenye ramani...');
+  const query=str+', '+dist+', '+reg+', Tanzania';
+  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=tz&q='+encodeURIComponent(query))
+  .then(r=>r.json()).then(rows=>{
+    if(rows.length){
+      setPicked(parseFloat(rows[0].lat),parseFloat(rows[0].lon),str+', '+dist+', '+reg);
+      toast('Eneo limepatikana ✅');
+    } else toast('Eneo halikupatikana moja kwa moja. Bonyeza kwenye ramani.');
+  });
+};
+
+/* SHOP SAVE */
+let activeShop=null;
+$('#saveShop').onclick=()=>{
+  const name=$('#shopName').value.trim(), reg=$('#shopRegion').value.trim(), dist=$('#shopDistrict').value.trim(), str=$('#shopStreet').value.trim();
+  if(!name||!reg||!dist||!str){toast('Tafadhali jaza nafasi zote');return;}
+  if(!pickedLoc){toast('Tafadhali hakiki eneo kwenye ramani kwanza');return;}
+  const shop={id:'s'+Math.random().toString(36).slice(2,8),name,phone:$('#shopPhone').value.trim(),lat:pickedLoc.lat,lon:pickedLoc.lon,address:str+', '+dist+', '+reg,products:[]};
+  SHOPS.push(shop);saveShops(SHOPS);
+  openProducts(shop);
+  renderMyShops();
+  toast('Duka limehifadhiwa! 🎉');
+};
+
+function openProducts(shop){
+  activeShop=shop;
+  $('#shopRegCard').classList.add('hidden');
+  $('#prodCard').classList.remove('hidden');
+  $('#prodShopName').textContent=shop.name;
+  $('#prodShopAddr').textContent=shop.address;
+  renderProducts();
+}
+function renderProducts(){
+  const box=$('#prodList');box.innerHTML='';
+  if(!activeShop.products.length){box.innerHTML='<div style="color:var(--titanium-sub);font-size:14px;text-align:center;padding:10px">Bado hujaweka bidhaa</div>';return;}
+  activeShop.products.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='res-card';
+    d.innerHTML='<div class="mid"><div class="title">'+p.name+'</div></div><div class="price">'+money(p.price)+'</div>';
+    box.appendChild(d);
+  });
+}
+$('#addProd').onclick=()=>{
+  const n=$('#prodName').value.trim(), p=$('#prodPrice').value.trim();
+  if(!n||!p){toast('Weka jina na bei sahihi');return;}
+  activeShop.products.push({name:n,price:Number(p)});saveShops(SHOPS);
+  $('#prodName').value='';$('#prodPrice').value='';
+  renderProducts();
+};
+$('#newShopBtn').onclick=()=>{
+  $('#prodCard').classList.add('hidden');
+  $('#shopRegCard').classList.remove('hidden');
+};
+
+function renderMyShops(){
+  const box=$('#myShops');box.innerHTML='';
+  SHOPS.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='res-card';
+    d.innerHTML='<div class="ic-box">🏪</div><div class="mid"><div class="title">'+s.name+'</div><div class="subtitle">'+s.address+'</div></div>';
+    d.onclick=()=>openProducts(s);
+    box.appendChild(d);
+  });
+}
+
+/* CUSTOMER & GPS LOCATION */
+let userLoc=null;
+function requestLocation(cb){
+  if(userLoc){cb(userLoc);return;}
+  $('#locModal').classList.remove('hidden');
+  $('#allowLocBtn').onclick=()=>{
+    $('#locModal').classList.add('hidden');
+    navigator.geolocation.getCurrentPosition(p=>{
+      userLoc={lat:p.coords.latitude,lon:p.coords.longitude};
+      toast('GPS Imeunganishwa! 📍');
+      cb(userLoc);
+    },()=>cb(null),{enableHighAccuracy:true});
+  };
+  $('#denyLocBtn').onclick=()=>{
+    $('#locModal').classList.add('hidden');
+    cb(null);
+  };
+}
+
+$('#searchBtn').onclick=()=>{
+  const q=$('#searchInput').value.trim().toLowerCase();
+  if(!q)return;
+  const matches=[];
+  SHOPS.forEach(s=>{
+    s.products.forEach(p=>{
+      if(p.name.toLowerCase().includes(q)) matches.push({prod:p,shop:s});
+    });
+  });
+  const box=$('#custResults');box.innerHTML='';
+  if(!matches.length){box.innerHTML='<div style="text-align:center;padding:30px;color:var(--titanium-sub)">Hakuna bidhaa iliyopatikana</div>';return;}
+  matches.forEach(m=>{
+    const d=document.createElement('div');
+    d.className='res-card';
+    d.innerHTML='<div class="ic-box">🛍️</div><div class="mid"><div class="title">'+m.prod.name+'</div><div class="subtitle">'+m.shop.name+'</div></div><div class="price">'+money(m.prod.price)+'</div>';
+    d.onclick=()=>requestLocation(()=>openMap(m));
+    box.appendChild(d);
+  });
+};
+
+/* MAP ROUTING */
+let custMap=null, routeCtrl=null;
+function openMap(m){
+  $('#mapProd').textContent=m.prod.name;
+  $('#mapShop').textContent=m.shop.name;
+  $('#mapPanel').classList.remove('hidden');
+  setDynamicIsland('Elekea: '+m.shop.name, '🗺️');
+  setTimeout(()=>{
+    if(!custMap){
+      custMap=L.map('custMap').setView([m.shop.lat,m.shop.lon],15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(custMap);
+    }
+    custMap.invalidateSize();
+    L.marker([m.shop.lat,m.shop.lon]).addTo(custMap);
+    if(userLoc){
+      if(routeCtrl) custMap.removeControl(routeCtrl);
+      routeCtrl=L.Routing.control({
+        waypoints:[L.latLng(userLoc.lat,userLoc.lon),L.latLng(m.shop.lat,m.shop.lon)],
+        show:false
+      }).addTo(custMap);
+      const km=haversine(userLoc.lat,userLoc.lon,m.shop.lat,m.shop.lon);
+      $('#distVal').textContent=fmtDist(km);
+      $('#timeVal').textContent=fmtTime(km);
+    }
+  },100);
+}
+
+function closeMapView(){
+  $('#mapPanel').classList.add('hidden');
+  setDynamicIsland('Tafuta Bidhaa');
+}
+
+$('#closeMap').onclick=closeMapView;
+$('#backMapBtn').onclick=closeMapView;
+
+show('home');
+</script>
+</body>
+</html>
